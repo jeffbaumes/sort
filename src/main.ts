@@ -188,13 +188,13 @@ const initialUpgrades: Upgrade[] = [
   {
     type: "goal_size",
     price: 250,
-    value: 2.5,
+    value: 2,
     purchased: false,
   },
   {
     type: "goal_size",
     price: 500,
-    value: 2,
+    value: 2.5,
     purchased: false,
   },
   {
