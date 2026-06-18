@@ -8,7 +8,8 @@ type UpgradeType =
   | "grid_size"
   | "goal_on_piece"
   | "auto_pickup"
-  | "auto_drop";
+  | "auto_drop"
+  | "magnet_speed";
 
 type UpgradeInfo = Box & {
   type: UpgradeType;
@@ -70,6 +71,14 @@ const upgradeInfo: UpgradeInfo[] = [
     name: "Auto Drop",
     description: "Automatically drops piece at target",
     x: 5,
+    y: -2,
+    size: 1,
+  },
+  {
+    type: "magnet_speed",
+    name: "Magnet",
+    description: "Increase pull on pieces toward target area",
+    x: 6,
     y: -2,
     size: 1,
   },
@@ -165,7 +174,7 @@ const initialUpgrades: Upgrade[] = [
     type: "goal_size",
     price: 50,
     value: 1.2,
-    purchased: true,
+    purchased: false,
   },
   {
     type: "goal_size",
@@ -301,8 +310,20 @@ const initialUpgrades: Upgrade[] = [
   },
   {
     type: "grid_size",
-    price: 10000,
-    value: 20,
+    price: 7000,
+    value: 12,
+    purchased: false,
+  },
+  {
+    type: "grid_size",
+    price: 9000,
+    value: 14,
+    purchased: false,
+  },
+  {
+    type: "grid_size",
+    price: 11000,
+    value: 16,
     purchased: false,
   },
   {
@@ -326,6 +347,36 @@ const initialUpgrades: Upgrade[] = [
   {
     type: "auto_drop",
     price: 1000,
+    value: 1,
+    purchased: false,
+  },
+  {
+    type: "magnet_speed",
+    price: 0,
+    value: 0,
+    purchased: true,
+  },
+  {
+    type: "magnet_speed",
+    price: 2000,
+    value: 0.05,
+    purchased: false,
+  },
+  {
+    type: "magnet_speed",
+    price: 3000,
+    value: 0.1,
+    purchased: false,
+  },
+  {
+    type: "magnet_speed",
+    price: 5000,
+    value: 0.2,
+    purchased: false,
+  },
+  {
+    type: "magnet_speed",
+    price: 10000,
     value: 1,
     purchased: false,
   },
@@ -405,11 +456,15 @@ function atGoal(piece: Piece) {
   return piece.x === piece.goalX && piece.y === piece.goalY;
 }
 
+function gridSizeReward(size: number) {
+  return ((size - 1) * (size - 2)) / 2 + 2;
+}
+
 function maybeLockPiece(piece: Piece, goalSize: number, gridSize: number) {
   if (inGoal(piece, goalSize)) {
     piece.x = piece.goalX;
     piece.y = piece.goalY;
-    game.bank += gridSize;
+    game.bank += gridSizeReward(gridSize);
   }
 }
 
@@ -469,7 +524,7 @@ window.addEventListener("keydown", (event) => {
   } else if (event.key === "q") {
     reset();
   } else if (event.key === "m") {
-    game.bank += 100;
+    game.bank += 1000;
   }
 });
 
@@ -582,7 +637,8 @@ function render(now: number) {
   const gridSize = upgradeValue(game.upgrades, "grid_size");
   const win = game.pieces.every((piece) => atGoal(piece));
   if (win && game.state === "play") {
-    const winBonus = gridSize * gridSize;
+    // Bonus is one extra row
+    const winBonus = gridSize * gridSizeReward(gridSize);
     game.bank += winBonus;
     game.state = "store";
   }
@@ -653,6 +709,21 @@ function render(now: number) {
     if (player.pieceHeld !== null && inGoal(player.pieceHeld, goalSize)) {
       maybeLockPiece(player.pieceHeld, goalSize, gridSize);
       player.pieceHeld = null;
+    }
+  }
+
+  const magnetSpeed = upgradeValue(game.upgrades, "magnet_speed");
+  if (magnetSpeed > 0) {
+    for (const piece of pieces) {
+      if (piece !== player.pieceHeld && !inGoal(piece, goalSize)) {
+        const dx = piece.goalX - piece.x;
+        const dy = piece.goalY - piece.y;
+        const len = Math.hypot(dx, dy);
+        if (len > magnetSpeed * dt) {
+          piece.x += (dx / len) * magnetSpeed * dt;
+          piece.y += (dy / len) * magnetSpeed * dt;
+        }
+      }
     }
   }
 
