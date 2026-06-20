@@ -488,39 +488,40 @@ type Player = Box & {
 
 const keys: Record<string, boolean> = {};
 
-window.addEventListener("keydown", (event) => {
+function handleAction() {
   const { player } = game;
-  keys[event.key] = true;
-  if (event.key === " ") {
-    if (game.state === "play") {
-      const gridSize = upgradeValue(game.upgrades, "grid_size");
-      if (boxContains(restartBox, game.player)) {
-        game.state = "store";
-      }
-      if (player.pieceHeld !== null) {
-        const goalSize = upgradeValue(game.upgrades, "goal_size");
-        maybeLockPiece(player.pieceHeld, goalSize, gridSize);
-        player.pieceHeld = null;
-      } else {
-        const piece = hoverPiece();
-        if (piece) {
-          player.pieceHeld = piece;
-        }
-      }
-    } else if (game.state === "store") {
-      for (let info of upgradeInfo) {
-        if (boxContains(info, game.player)) {
-          const next = nextUpgrade(game.upgrades, info.type);
-          if (next !== null && game.bank >= next.price) {
-            next.purchased = true;
-            game.bank -= next.price;
-          }
-        }
-      }
-      if (boxContains(restartBox, game.player)) {
-        restart();
+  if (game.state === "play") {
+    const gridSize = upgradeValue(game.upgrades, "grid_size");
+    if (player.pieceHeld !== null) {
+      const goalSize = upgradeValue(game.upgrades, "goal_size");
+      maybeLockPiece(player.pieceHeld, goalSize, gridSize);
+      player.pieceHeld = null;
+    } else {
+      const piece = hoverPiece();
+      if (piece) {
+        player.pieceHeld = piece;
       }
     }
+  } else if (game.state === "store") {
+    for (let info of upgradeInfo) {
+      if (boxContains(info, game.player)) {
+        const next = nextUpgrade(game.upgrades, info.type);
+        if (next !== null && game.bank >= next.price) {
+          next.purchased = true;
+          game.bank -= next.price;
+        }
+      }
+    }
+    if (boxContains(restartBox, game.player)) {
+      restart();
+    }
+  }
+}
+
+window.addEventListener("keydown", (event) => {
+  keys[event.key] = true;
+  if (event.key === " ") {
+    handleAction();
   } else if (event.key === "q") {
     reset();
   } else if (event.key === "m") {
@@ -539,7 +540,140 @@ window.addEventListener("blur", () => {
   }
 });
 
+window.addEventListener("pointerdown", (event) => {
+  const click = {
+    x: event.clientX,
+    y: event.clientY,
+    size: 1,
+  };
+  if (
+    boxContains(
+      {
+        x: window.innerWidth - 1.5 * arrowButtonSize - uiInset,
+        y: window.innerHeight - 2.5 * arrowButtonSize - uiInset,
+        size: arrowButtonSize,
+      },
+      click,
+    )
+  ) {
+    keys.ArrowUp = true;
+  }
+  if (
+    boxContains(
+      {
+        x: window.innerWidth - 1.5 * arrowButtonSize - uiInset,
+        y: window.innerHeight - 0.5 * arrowButtonSize - uiInset,
+        size: arrowButtonSize,
+      },
+      click,
+    )
+  ) {
+    keys.ArrowDown = true;
+  }
+  if (
+    boxContains(
+      {
+        x: window.innerWidth - 2.5 * arrowButtonSize - uiInset,
+        y: window.innerHeight - 1.5 * arrowButtonSize - uiInset,
+        size: arrowButtonSize,
+      },
+      click,
+    )
+  ) {
+    keys.ArrowLeft = true;
+  }
+  if (
+    boxContains(
+      {
+        x: window.innerWidth - 0.5 * arrowButtonSize - uiInset,
+        y: window.innerHeight - 1.5 * arrowButtonSize - uiInset,
+        size: arrowButtonSize,
+      },
+      click,
+    )
+  ) {
+    keys.ArrowRight = true;
+  }
+  if (
+    boxContains(
+      {
+        x: window.innerWidth - 0.5 * arrowButtonSize - uiInset,
+        y: window.innerHeight - 0.5 * arrowButtonSize - uiInset,
+        size: arrowButtonSize,
+      },
+      click,
+    )
+  ) {
+    keys.ArrowRight = true;
+    keys.ArrowDown = true;
+  }
+  if (
+    boxContains(
+      {
+        x: window.innerWidth - 0.5 * arrowButtonSize - uiInset,
+        y: window.innerHeight - 2.5 * arrowButtonSize - uiInset,
+        size: arrowButtonSize,
+      },
+      click,
+    )
+  ) {
+    keys.ArrowRight = true;
+    keys.ArrowUp = true;
+  }
+  if (
+    boxContains(
+      {
+        x: window.innerWidth - 2.5 * arrowButtonSize - uiInset,
+        y: window.innerHeight - 2.5 * arrowButtonSize - uiInset,
+        size: arrowButtonSize,
+      },
+      click,
+    )
+  ) {
+    keys.ArrowLeft = true;
+    keys.ArrowUp = true;
+  }
+  if (
+    boxContains(
+      {
+        x: window.innerWidth - 2.5 * arrowButtonSize - uiInset,
+        y: window.innerHeight - 0.5 * arrowButtonSize - uiInset,
+        size: arrowButtonSize,
+      },
+      click,
+    )
+  ) {
+    keys.ArrowLeft = true;
+    keys.ArrowDown = true;
+  }
+  if (
+    boxContains(
+      {
+        x: 0.5 * actionButtonSize + uiInset,
+        y: window.innerHeight - 0.5 * actionButtonSize - uiInset,
+        size: actionButtonSize,
+      },
+      click,
+    )
+  ) {
+    handleAction();
+  }
+});
+
+function clearActionKeys() {
+  keys.ArrowUp = false;
+  keys.ArrowDown = false;
+  keys.ArrowLeft = false;
+  keys.ArrowRight = false;
+}
+
+window.addEventListener("pointerup", clearActionKeys);
+window.addEventListener("pointercancel", clearActionKeys);
+
 let zoom = 100;
+let uiInset = 25;
+let arrowButtonSize = 50;
+let actionButtonSize = 100;
 const ACCEL = 10;
 const DECEL = 50;
 
@@ -826,23 +960,6 @@ function render(now: number) {
   let storeMessage = "";
   if (game.state === "store") {
     storeMessage = renderStore(ctx);
-  } else if (game.state === "play") {
-    const { x, y, size } = restartBox;
-    const hover = boxContains(restartBox, game.player);
-    ctx.fillStyle = hover ? "#9f9" : "white";
-    const insetSize = 0.9 * size;
-    ctx.fillRect(
-      (x - game.player.x - insetSize / 2) * zoom,
-      (y - game.player.y - insetSize / 2) * zoom,
-      insetSize * zoom,
-      insetSize * zoom,
-    );
-    ctx.fillStyle = "black";
-    ctx.fillText(
-      "Exit Level",
-      (x - game.player.x) * zoom,
-      (y - game.player.y) * zoom,
-    );
   }
 
   ctx.fillStyle = "#4fc3f7";
@@ -855,14 +972,84 @@ function render(now: number) {
 
   ctx.restore();
 
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  ("← → ↑ ↓ ↖ ↗ ↘ ↙");
+
+  ctx.fillStyle = "rgba(255,255,255,0.8)";
+  ctx.fillRect(
+    w - 2 * arrowButtonSize - uiInset,
+    h - 3 * arrowButtonSize - uiInset,
+    arrowButtonSize,
+    arrowButtonSize,
+  );
+  ctx.fillStyle = "black";
+  ctx.fillText(
+    "↑",
+    w - 1.5 * arrowButtonSize - uiInset,
+    h - 2.5 * arrowButtonSize - uiInset,
+  );
+
+  ctx.fillStyle = "rgba(255,255,255,0.8)";
+  ctx.fillRect(
+    w - 2 * arrowButtonSize - uiInset,
+    h - arrowButtonSize - uiInset,
+    arrowButtonSize,
+    arrowButtonSize,
+  );
+  ctx.fillStyle = "black";
+  ctx.fillText(
+    "↓",
+    w - 1.5 * arrowButtonSize - uiInset,
+    h - 0.5 * arrowButtonSize - uiInset,
+  );
+
+  ctx.fillStyle = "rgba(255,255,255,0.8)";
+  ctx.fillRect(
+    w - 3 * arrowButtonSize - uiInset,
+    h - 2 * arrowButtonSize - uiInset,
+    arrowButtonSize,
+    arrowButtonSize,
+  );
+  ctx.fillStyle = "black";
+  ctx.fillText(
+    "←",
+    w - 2.5 * arrowButtonSize - uiInset,
+    h - 1.5 * arrowButtonSize - uiInset,
+  );
+
+  ctx.fillStyle = "rgba(255,255,255,0.8)";
+  ctx.fillRect(
+    w - arrowButtonSize - uiInset,
+    h - 2 * arrowButtonSize - uiInset,
+    arrowButtonSize,
+    arrowButtonSize,
+  );
+  ctx.fillStyle = "black";
+  ctx.fillText(
+    "→",
+    w - 0.5 * arrowButtonSize - uiInset,
+    h - 1.5 * arrowButtonSize - uiInset,
+  );
+
+  ctx.fillStyle = "rgba(255,255,255,0.8)";
+  ctx.fillRect(
+    uiInset,
+    h - actionButtonSize - uiInset,
+    actionButtonSize,
+    actionButtonSize,
+  );
+
+  ctx.textAlign = "start";
+  ctx.textBaseline = "alphabetic";
   ctx.fillStyle = "white";
   ctx.fillText(`${game.bank}`, 5, 20);
-  ctx.fillText(
-    "Arrows to move - Space to pick up, drop, buy - Q to reset the entire game",
-    5,
-    40,
-  );
-  ctx.fillText(storeMessage, 5, 60);
+  ctx.fillText("Arrows to move", 5, 40);
+  ctx.fillText("Space/action to pick up, drop, buy", 5, 60);
+  ctx.fillText("Q to reset the entire game", 5, 80);
+  ctx.fillStyle = "#9f9";
+  ctx.fillText(storeMessage, 5, 100);
 
   requestAnimationFrame(render);
 }
