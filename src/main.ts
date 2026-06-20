@@ -541,8 +541,11 @@ window.addEventListener("blur", () => {
 
 window.addEventListener("contextmenu", (e) => e.preventDefault());
 
-window.addEventListener("pointerdown", (event) => {
-  event.preventDefault();
+function movementPositionToKeys(event: PointerEvent) {
+  keys.ArrowUp = false;
+  keys.ArrowDown = false;
+  keys.ArrowLeft = false;
+  keys.ArrowRight = false;
   const click = {
     x: event.clientX,
     y: event.clientY,
@@ -559,6 +562,7 @@ window.addEventListener("pointerdown", (event) => {
     )
   ) {
     keys.ArrowUp = true;
+    movementPointerId = event.pointerId;
   }
   if (
     boxContains(
@@ -571,6 +575,7 @@ window.addEventListener("pointerdown", (event) => {
     )
   ) {
     keys.ArrowDown = true;
+    movementPointerId = event.pointerId;
   }
   if (
     boxContains(
@@ -583,6 +588,7 @@ window.addEventListener("pointerdown", (event) => {
     )
   ) {
     keys.ArrowLeft = true;
+    movementPointerId = event.pointerId;
   }
   if (
     boxContains(
@@ -595,6 +601,7 @@ window.addEventListener("pointerdown", (event) => {
     )
   ) {
     keys.ArrowRight = true;
+    movementPointerId = event.pointerId;
   }
   if (
     boxContains(
@@ -608,6 +615,7 @@ window.addEventListener("pointerdown", (event) => {
   ) {
     keys.ArrowRight = true;
     keys.ArrowDown = true;
+    movementPointerId = event.pointerId;
   }
   if (
     boxContains(
@@ -621,6 +629,7 @@ window.addEventListener("pointerdown", (event) => {
   ) {
     keys.ArrowRight = true;
     keys.ArrowUp = true;
+    movementPointerId = event.pointerId;
   }
   if (
     boxContains(
@@ -634,6 +643,7 @@ window.addEventListener("pointerdown", (event) => {
   ) {
     keys.ArrowLeft = true;
     keys.ArrowUp = true;
+    movementPointerId = event.pointerId;
   }
   if (
     boxContains(
@@ -647,7 +657,20 @@ window.addEventListener("pointerdown", (event) => {
   ) {
     keys.ArrowLeft = true;
     keys.ArrowDown = true;
+    movementPointerId = event.pointerId;
   }
+}
+
+window.addEventListener("pointerdown", (event) => {
+  event.preventDefault();
+
+  movementPositionToKeys(event);
+
+  const click = {
+    x: event.clientX,
+    y: event.clientY,
+    size: 1,
+  };
   if (
     boxContains(
       {
@@ -662,12 +685,21 @@ window.addEventListener("pointerdown", (event) => {
   }
 });
 
-function clearActionKeys() {
-  keys.ArrowUp = false;
-  keys.ArrowDown = false;
-  keys.ArrowLeft = false;
-  keys.ArrowRight = false;
+function clearActionKeys(event: PointerEvent) {
+  if (event.pointerId === movementPointerId) {
+    keys.ArrowUp = false;
+    keys.ArrowDown = false;
+    keys.ArrowLeft = false;
+    keys.ArrowRight = false;
+    movementPointerId = null;
+  }
 }
+
+window.addEventListener("pointermove", (event) => {
+  if (event.pointerId === movementPointerId) {
+    movementPositionToKeys(event);
+  }
+});
 
 window.addEventListener("pointerup", clearActionKeys);
 window.addEventListener("pointercancel", clearActionKeys);
@@ -676,6 +708,7 @@ let zoom = 100;
 let uiInset = 25;
 let arrowButtonSize = 50;
 let actionButtonSize = 100;
+let movementPointerId: number | null = null;
 const ACCEL = 10;
 const DECEL = 50;
 
