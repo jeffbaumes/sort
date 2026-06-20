@@ -546,118 +546,29 @@ function movementPositionToKeys(event: PointerEvent) {
   keys.ArrowDown = false;
   keys.ArrowLeft = false;
   keys.ArrowRight = false;
-  const click = {
-    x: event.clientX,
-    y: event.clientY,
-    size: 1,
-  };
-  if (
-    boxContains(
-      {
-        x: window.innerWidth - 1.5 * arrowButtonSize - uiInset,
-        y: window.innerHeight - 2.5 * arrowButtonSize - uiInset,
-        size: arrowButtonSize,
-      },
-      click,
-    )
-  ) {
+
+  const centerX = window.innerWidth - 1.5 * arrowButtonSize - uiInset;
+  const centerY = window.innerHeight - 1.5 * arrowButtonSize - uiInset;
+  const dx = event.clientX - centerX;
+  const dy = -(event.clientY - centerY);
+  const angle = Math.atan2(dy, dx);
+  const distance = Math.hypot(dx, dy);
+  if (distance > 2 * arrowButtonSize) {
+    return;
+  }
+  movementPointerId = event.pointerId;
+
+  if (angle >= Math.PI / 8 && angle <= (7 * Math.PI) / 8) {
     keys.ArrowUp = true;
-    movementPointerId = event.pointerId;
   }
-  if (
-    boxContains(
-      {
-        x: window.innerWidth - 1.5 * arrowButtonSize - uiInset,
-        y: window.innerHeight - 0.5 * arrowButtonSize - uiInset,
-        size: arrowButtonSize,
-      },
-      click,
-    )
-  ) {
+  if (angle >= (-7 * Math.PI) / 8 && angle <= -Math.PI / 8) {
     keys.ArrowDown = true;
-    movementPointerId = event.pointerId;
   }
-  if (
-    boxContains(
-      {
-        x: window.innerWidth - 2.5 * arrowButtonSize - uiInset,
-        y: window.innerHeight - 1.5 * arrowButtonSize - uiInset,
-        size: arrowButtonSize,
-      },
-      click,
-    )
-  ) {
-    keys.ArrowLeft = true;
-    movementPointerId = event.pointerId;
-  }
-  if (
-    boxContains(
-      {
-        x: window.innerWidth - 0.5 * arrowButtonSize - uiInset,
-        y: window.innerHeight - 1.5 * arrowButtonSize - uiInset,
-        size: arrowButtonSize,
-      },
-      click,
-    )
-  ) {
+  if (angle >= (-3 * Math.PI) / 8 && angle <= (3 * Math.PI) / 8) {
     keys.ArrowRight = true;
-    movementPointerId = event.pointerId;
   }
-  if (
-    boxContains(
-      {
-        x: window.innerWidth - 0.5 * arrowButtonSize - uiInset,
-        y: window.innerHeight - 0.5 * arrowButtonSize - uiInset,
-        size: arrowButtonSize,
-      },
-      click,
-    )
-  ) {
-    keys.ArrowRight = true;
-    keys.ArrowDown = true;
-    movementPointerId = event.pointerId;
-  }
-  if (
-    boxContains(
-      {
-        x: window.innerWidth - 0.5 * arrowButtonSize - uiInset,
-        y: window.innerHeight - 2.5 * arrowButtonSize - uiInset,
-        size: arrowButtonSize,
-      },
-      click,
-    )
-  ) {
-    keys.ArrowRight = true;
-    keys.ArrowUp = true;
-    movementPointerId = event.pointerId;
-  }
-  if (
-    boxContains(
-      {
-        x: window.innerWidth - 2.5 * arrowButtonSize - uiInset,
-        y: window.innerHeight - 2.5 * arrowButtonSize - uiInset,
-        size: arrowButtonSize,
-      },
-      click,
-    )
-  ) {
+  if (angle >= (5 * Math.PI) / 8 || angle <= (-5 * Math.PI) / 8) {
     keys.ArrowLeft = true;
-    keys.ArrowUp = true;
-    movementPointerId = event.pointerId;
-  }
-  if (
-    boxContains(
-      {
-        x: window.innerWidth - 2.5 * arrowButtonSize - uiInset,
-        y: window.innerHeight - 0.5 * arrowButtonSize - uiInset,
-        size: arrowButtonSize,
-      },
-      click,
-    )
-  ) {
-    keys.ArrowLeft = true;
-    keys.ArrowDown = true;
-    movementPointerId = event.pointerId;
   }
 }
 
