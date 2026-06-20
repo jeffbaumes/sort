@@ -542,11 +542,6 @@ window.addEventListener("blur", () => {
 window.addEventListener("contextmenu", (e) => e.preventDefault());
 
 function movementPositionToKeys(event: PointerEvent) {
-  keys.ArrowUp = false;
-  keys.ArrowDown = false;
-  keys.ArrowLeft = false;
-  keys.ArrowRight = false;
-
   const centerX = window.innerWidth - 1.5 * arrowButtonSize - uiInset;
   const centerY = window.innerHeight - 1.5 * arrowButtonSize - uiInset;
   const dx = event.clientX - centerX;
@@ -558,6 +553,10 @@ function movementPositionToKeys(event: PointerEvent) {
   }
   movementPointerId = event.pointerId;
 
+  keys.ArrowUp = false;
+  keys.ArrowDown = false;
+  keys.ArrowLeft = false;
+  keys.ArrowRight = false;
   if (angle >= Math.PI / 8 && angle <= (7 * Math.PI) / 8) {
     keys.ArrowUp = true;
   }
