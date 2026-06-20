@@ -15,6 +15,12 @@ const restartBox: Box = {
   size: 1,
 };
 
+const resetBox: Box = {
+  x: 0,
+  y: -4,
+  size: 1,
+};
+
 function resize() {
   const dpr = window.devicePixelRatio || 1;
 
@@ -116,6 +122,9 @@ function handleAction() {
     if (boxContains(restartBox, game.player)) {
       restart();
     }
+    if (boxContains(resetBox, game.player)) {
+      reset();
+    }
   }
 }
 
@@ -123,8 +132,6 @@ window.addEventListener("keydown", (event) => {
   keys[event.key] = true;
   if (event.key === " ") {
     handleAction();
-  } else if (event.key === "q") {
-    reset();
   } else if (event.key === "m") {
     game.bank += 1000;
   }
@@ -590,12 +597,19 @@ function render(now: number) {
   ctx.textAlign = "start";
   ctx.textBaseline = "alphabetic";
   ctx.fillStyle = "white";
-  ctx.fillText(`${game.bank}`, 5, 20);
-  ctx.fillText("Arrows to move", 5, 40);
-  ctx.fillText("Space/action to pick up, drop, buy", 5, 60);
-  ctx.fillText("Q to reset the entire game", 5, 80);
-  ctx.fillStyle = "#9f9";
-  ctx.fillText(storeMessage, 5, 100);
+  let lineY = 20;
+  ctx.fillText(`Credits: ${game.bank}`, 5, lineY);
+  lineY += 20;
+  ctx.fillText("Sort the pieces into their places", 5, lineY);
+  lineY += 20;
+  ctx.fillText("Pieces turn purple in their target areas", 5, lineY);
+  lineY += 20;
+  ctx.fillText("Arrows to move", 5, lineY);
+  lineY += 20;
+  ctx.fillText("Space or action button to pick up, drop, buy", 5, lineY);
+  ctx.fillStyle = storeMessage.includes("Are you sure?") ? "#f99" : "#9f9";
+  lineY += 20;
+  ctx.fillText(storeMessage, 5, lineY);
 
   requestAnimationFrame(render);
 }
@@ -630,18 +644,45 @@ function renderStore(ctx: CanvasRenderingContext2D): string {
       (info.y - game.player.y) * zoom + 10,
     );
   });
-  const { x, y, size } = restartBox;
-  const hover = boxContains(restartBox, game.player);
-  ctx.fillStyle = hover ? "#9f9" : "white";
-  const insetSize = 0.9 * size;
-  ctx.fillRect(
-    (x - game.player.x - insetSize / 2) * zoom,
-    (y - game.player.y - insetSize / 2) * zoom,
-    insetSize * zoom,
-    insetSize * zoom,
-  );
-  ctx.fillStyle = "black";
-  ctx.fillText("Start", (x - game.player.x) * zoom, (y - game.player.y) * zoom);
+  {
+    const { x, y, size } = restartBox;
+    const hover = boxContains(restartBox, game.player);
+    ctx.fillStyle = hover ? "#9f9" : "white";
+    const insetSize = 0.9 * size;
+    ctx.fillRect(
+      (x - game.player.x - insetSize / 2) * zoom,
+      (y - game.player.y - insetSize / 2) * zoom,
+      insetSize * zoom,
+      insetSize * zoom,
+    );
+    ctx.fillStyle = "black";
+    ctx.fillText(
+      "Start",
+      (x - game.player.x) * zoom,
+      (y - game.player.y) * zoom,
+    );
+  }
+  {
+    const { x, y, size } = resetBox;
+    const hover = boxContains(resetBox, game.player);
+    if (hover) {
+      message = "Resets the entire game! Are you sure?";
+    }
+    ctx.fillStyle = hover ? "#f99" : "white";
+    const insetSize = 0.9 * size;
+    ctx.fillRect(
+      (x - game.player.x - insetSize / 2) * zoom,
+      (y - game.player.y - insetSize / 2) * zoom,
+      insetSize * zoom,
+      insetSize * zoom,
+    );
+    ctx.fillStyle = "black";
+    ctx.fillText(
+      "Reset Game",
+      (x - game.player.x) * zoom,
+      (y - game.player.y) * zoom,
+    );
+  }
   return message;
 }
 
