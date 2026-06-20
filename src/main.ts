@@ -533,14 +533,16 @@ window.addEventListener("keyup", (event) => {
   keys[event.key] = false;
 });
 
-// Prevent stuck keys when the window loses focus
 window.addEventListener("blur", () => {
   for (const key in keys) {
     keys[key] = false;
   }
 });
 
+window.addEventListener("contextmenu", (e) => e.preventDefault());
+
 window.addEventListener("pointerdown", (event) => {
+  event.preventDefault();
   const click = {
     x: event.clientX,
     y: event.clientY,

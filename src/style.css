@@ -13,3 +13,10 @@ canvas {
   width: 100vw;
   height: 100vh;
 }
+
+* {
+  touch-action: none; /* disables pan, zoom, tap highlights */
+  user-select: none; /* no text selection */
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
