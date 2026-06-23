@@ -9,18 +9,6 @@ import {
 const canvas = document.getElementById("game") as HTMLCanvasElement;
 const ctx = canvas.getContext("2d")!;
 
-const restartBox: Box = {
-  x: 0,
-  y: -1,
-  size: 1,
-};
-
-const resetBox: Box = {
-  x: 0,
-  y: -4,
-  size: 1,
-};
-
 function resize() {
   const dpr = window.devicePixelRatio || 1;
 
@@ -47,7 +35,8 @@ function generatePiece(gridSize: number, goalX: number, goalY: number): Piece {
   return {
     x: Math.random() * (gridSize - 1),
     y: Math.random() * (gridSize - 1),
-    size: 0.5,
+    width: 0.5,
+    height: 0.5,
     goalX,
     goalY,
     placed: false,
@@ -56,7 +45,10 @@ function generatePiece(gridSize: number, goalX: number, goalY: number): Piece {
 }
 
 function inGoal(piece: Piece, goalSize: number) {
-  return boxContains({ x: piece.goalX, y: piece.goalY, size: goalSize }, piece);
+  return boxContains(
+    { x: piece.goalX, y: piece.goalY, width: goalSize, height: goalSize },
+    piece,
+  );
 }
 
 function atGoal(piece: Piece) {
@@ -108,22 +100,6 @@ function handleAction() {
       if (piece) {
         player.pieceHeld = piece;
       }
-    }
-  } else if (game.state === "store") {
-    for (let info of upgradeInfo) {
-      if (boxContains(info, game.player)) {
-        const next = nextUpgrade(game.upgrades, info.type);
-        if (next !== null && game.bank >= next.price) {
-          next.purchased = true;
-          game.bank -= next.price;
-        }
-      }
-    }
-    if (boxContains(restartBox, game.player)) {
-      restart();
-    }
-    if (boxContains(resetBox, game.player)) {
-      reset();
     }
   }
 }
@@ -182,19 +158,76 @@ function movementPositionToKeys(event: PointerEvent) {
 window.addEventListener("pointerdown", (event) => {
   event.preventDefault();
 
-  movementPositionToKeys(event);
-
   const click = {
     x: event.clientX,
     y: event.clientY,
-    size: 1,
+    width: 1,
+    height: 1,
   };
+  if (game.state === "store") {
+    const rect = {
+      x: window.innerWidth / 2,
+      y: uiInset + upgradeButtonHeight / 2,
+      width: upgradeButtonWidth,
+      height: upgradeButtonHeight,
+    };
+    if (boxContains(rect, click)) {
+      reset();
+    }
+    rect.y += 1.1 * upgradeButtonHeight;
+    rect.y += 1.1 * upgradeButtonHeight;
+    upgradeInfo.map((info) => {
+      if (boxContains(rect, click)) {
+        const next = nextUpgrade(game.upgrades, info.type);
+        if (next !== null && game.bank >= next.price) {
+          next.purchased = true;
+          game.bank -= next.price;
+        }
+      }
+      rect.y += 1.1 * upgradeButtonHeight;
+    });
+    if (boxContains(rect, click)) {
+      restart();
+    }
+
+    return;
+  }
+
+  movementPositionToKeys(event);
+
+  if (
+    boxContains(
+      {
+        x: window.innerWidth - 0.5 * arrowButtonSize - uiInset,
+        y: 0.5 * arrowButtonSize + uiInset,
+        width: arrowButtonSize,
+        height: arrowButtonSize,
+      },
+      click,
+    )
+  ) {
+    zoom *= 1.1;
+  }
+  if (
+    boxContains(
+      {
+        x: window.innerWidth - 0.5 * arrowButtonSize - uiInset,
+        y: 1.5 * arrowButtonSize + uiInset,
+        width: arrowButtonSize,
+        height: arrowButtonSize,
+      },
+      click,
+    )
+  ) {
+    zoom /= 1.1;
+  }
   if (
     boxContains(
       {
         x: 0.5 * actionButtonSize + uiInset,
         y: window.innerHeight - 0.5 * actionButtonSize - uiInset,
-        size: actionButtonSize,
+        width: actionButtonSize,
+        height: actionButtonSize,
       },
       click,
     )
@@ -268,7 +301,7 @@ function start(): Game {
   const player: Player = {
     ...(storagePlayer !== null
       ? (JSON.parse(storagePlayer) as Box)
-      : { x: 0, y: 0, size: 0.2 }),
+      : { x: 0, y: 0, width: 0.2, height: 0.2 }),
     vx: 0,
     vy: 0,
     pieceHeld: null,
@@ -287,7 +320,6 @@ function start(): Game {
 let game = start();
 
 function restart() {
-  console.log("restart");
   localStorage.removeItem("pieces");
   localStorage.removeItem("player");
   localStorage.removeItem("state");
@@ -295,7 +327,6 @@ function restart() {
 }
 
 function reset() {
-  console.log("reset");
   localStorage.removeItem("pieces");
   localStorage.removeItem("player");
   localStorage.removeItem("state");
@@ -338,7 +369,12 @@ function render(now: number) {
     localStorage.setItem("pieces", JSON.stringify(pieces));
     localStorage.setItem(
       "player",
-      JSON.stringify({ x: player.x, y: player.y, size: player.size }),
+      JSON.stringify({
+        x: player.x,
+        y: player.y,
+        width: player.width,
+        height: player.height,
+      }),
     );
     localStorage.setItem("upgrades", JSON.stringify(game.upgrades));
     localStorage.setItem("bank", JSON.stringify(game.bank));
@@ -346,25 +382,38 @@ function render(now: number) {
     lastSave = now;
   }
 
-  if (keys.ArrowRight) {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+
+  ctx.font = "14px Arial";
+
+  ctx.clearRect(0, 0, w, h);
+
+  if (game.state === "store") {
+    renderStore(ctx);
+    requestAnimationFrame(render);
+    return;
+  }
+
+  if (keys.ArrowRight || keys.d) {
     player.vx += dt * ACCEL;
   } else if (player.vx > 0) {
     player.vx -= dt * DECEL;
     player.vx = Math.max(player.vx, 0);
   }
-  if (keys.ArrowLeft) {
+  if (keys.ArrowLeft || keys.a) {
     player.vx -= dt * ACCEL;
   } else if (player.vx < 0) {
     player.vx += dt * DECEL;
     player.vx = Math.min(player.vx, 0);
   }
-  if (keys.ArrowUp) {
+  if (keys.ArrowUp || keys.w) {
     player.vy -= dt * ACCEL;
   } else if (player.vy < 0) {
     player.vy += dt * DECEL;
     player.vy = Math.min(player.vy, 0);
   }
-  if (keys.ArrowDown) {
+  if (keys.ArrowDown || keys.s) {
     player.vy += dt * ACCEL;
   } else if (player.vy > 0) {
     player.vy -= dt * DECEL;
@@ -413,13 +462,6 @@ function render(now: number) {
       }
     }
   }
-
-  const w = window.innerWidth;
-  const h = window.innerHeight;
-
-  ctx.font = "14px Arial";
-
-  ctx.clearRect(0, 0, w, h);
 
   ctx.save();
 
@@ -485,42 +527,40 @@ function render(now: number) {
           ? "purple"
           : piece.color;
     ctx.fillRect(
-      (piece.x - player.x - 0.5 * piece.size) * zoom,
-      (piece.y - player.y - 0.5 * piece.size) * zoom,
-      piece.size * zoom,
-      piece.size * zoom,
+      (piece.x - player.x - 0.5 * piece.width) * zoom,
+      (piece.y - player.y - 0.5 * piece.height) * zoom,
+      piece.width * zoom,
+      piece.height * zoom,
     );
     if (goalOnPiece > 0 && player.pieceHeld === piece) {
-      const miniSize = piece.size / gridSize;
+      const miniWidth = piece.width / gridSize;
+      const miniHeight = piece.height / gridSize;
       ctx.fillStyle = "green";
       ctx.fillRect(
-        (piece.x - player.x - 0.5 * piece.size + piece.goalX * miniSize) * zoom,
-        (piece.y - player.y - 0.5 * piece.size + piece.goalY * miniSize) * zoom,
-        miniSize * zoom,
-        miniSize * zoom,
+        (piece.x - player.x - 0.5 * piece.width + piece.goalX * miniWidth) *
+          zoom,
+        (piece.y - player.y - 0.5 * piece.height + piece.goalY * miniHeight) *
+          zoom,
+        miniWidth * zoom,
+        miniHeight * zoom,
       );
     }
     ctx.strokeStyle = "white";
     ctx.lineWidth = 1;
     ctx.strokeRect(
-      (piece.x - player.x - 0.5 * piece.size) * zoom,
-      (piece.y - player.y - 0.5 * piece.size) * zoom,
-      piece.size * zoom,
-      piece.size * zoom,
+      (piece.x - player.x - 0.5 * piece.width) * zoom,
+      (piece.y - player.y - 0.5 * piece.height) * zoom,
+      piece.width * zoom,
+      piece.height * zoom,
     );
-  }
-
-  let storeMessage = "";
-  if (game.state === "store") {
-    storeMessage = renderStore(ctx);
   }
 
   ctx.fillStyle = "#4fc3f7";
   ctx.fillRect(
-    -0.5 * player.size * zoom,
-    -0.5 * player.size * zoom,
-    player.size * zoom,
-    player.size * zoom,
+    -0.5 * player.width * zoom,
+    -0.5 * player.height * zoom,
+    player.width * zoom,
+    player.height * zoom,
   );
 
   ctx.restore();
@@ -528,7 +568,33 @@ function render(now: number) {
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
-  ("← → ↑ ↓ ↖ ↗ ↘ ↙");
+  ctx.fillStyle = "rgba(255,255,255,0.8)";
+  ctx.fillRect(
+    w - arrowButtonSize - uiInset,
+    uiInset,
+    arrowButtonSize,
+    arrowButtonSize,
+  );
+  ctx.fillStyle = "black";
+  ctx.fillText(
+    "+",
+    w - 0.5 * arrowButtonSize - uiInset,
+    0.5 * arrowButtonSize + uiInset,
+  );
+
+  ctx.fillStyle = "rgba(255,255,255,0.8)";
+  ctx.fillRect(
+    w - arrowButtonSize - uiInset,
+    arrowButtonSize + uiInset,
+    arrowButtonSize,
+    arrowButtonSize,
+  );
+  ctx.fillStyle = "black";
+  ctx.fillText(
+    "-",
+    w - 0.5 * arrowButtonSize - uiInset,
+    1.5 * arrowButtonSize + uiInset,
+  );
 
   ctx.fillStyle = "rgba(255,255,255,0.8)";
   ctx.fillRect(
@@ -607,83 +673,59 @@ function render(now: number) {
   ctx.fillText("Arrows to move", 5, lineY);
   lineY += 20;
   ctx.fillText("Space or action button to pick up, drop, buy", 5, lineY);
-  ctx.fillStyle = storeMessage.includes("Are you sure?") ? "#f99" : "#9f9";
-  lineY += 20;
-  ctx.fillText(storeMessage, 5, lineY);
 
   requestAnimationFrame(render);
 }
 
-function renderStore(ctx: CanvasRenderingContext2D): string {
-  let message = "";
+const upgradeButtonWidth = 200;
+const upgradeButtonHeight = 50;
+
+function renderStore(ctx: CanvasRenderingContext2D) {
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  const rect = {
+    x: window.innerWidth / 2,
+    y: uiInset + upgradeButtonHeight / 2,
+    width: upgradeButtonWidth,
+    height: upgradeButtonHeight,
+  };
+  ctx.fillStyle = "#f99";
+  ctx.fillRect(
+    rect.x - upgradeButtonWidth / 2,
+    rect.y - upgradeButtonHeight / 2,
+    rect.width,
+    rect.height,
+  );
+  ctx.fillStyle = "black";
+  ctx.fillText("End Game", rect.x, rect.y);
+  rect.y += 1.1 * upgradeButtonHeight;
+  ctx.fillStyle = "white";
+  ctx.fillText(`Credits: ${game.bank}`, rect.x, rect.y);
+  rect.y += 1.1 * upgradeButtonHeight;
   upgradeInfo.map((info) => {
     const upgrade = nextUpgrade(game.upgrades, info.type);
     const enoughMoney = upgrade !== null && game.bank >= upgrade.price;
-    const hover = boxContains(info, game.player);
-    if (hover) {
-      message = info.description;
-    }
-    ctx.fillStyle =
-      upgrade === null || !enoughMoney ? "gray" : hover ? "#9f9" : "white";
-    const insetSize = 0.9 * info.size;
+    ctx.fillStyle = upgrade === null || !enoughMoney ? "gray" : "white";
     ctx.fillRect(
-      (info.x - game.player.x - insetSize / 2) * zoom,
-      (info.y - game.player.y - insetSize / 2) * zoom,
-      insetSize * zoom,
-      insetSize * zoom,
+      rect.x - upgradeButtonWidth / 2,
+      rect.y - upgradeButtonHeight / 2,
+      rect.width,
+      rect.height,
     );
     ctx.fillStyle = "black";
-    ctx.fillText(
-      info.name,
-      (info.x - game.player.x) * zoom,
-      (info.y - game.player.y) * zoom - 10,
-    );
-    ctx.fillText(
-      upgrade ? `${upgrade.price}` : "Max",
-      (info.x - game.player.x) * zoom,
-      (info.y - game.player.y) * zoom + 10,
-    );
+    ctx.fillText(info.name, rect.x, rect.y - 10);
+    ctx.fillText(upgrade ? `${upgrade.price}` : "Max", rect.x, rect.y + 10);
+    rect.y += 1.1 * upgradeButtonHeight;
   });
-  {
-    const { x, y, size } = restartBox;
-    const hover = boxContains(restartBox, game.player);
-    ctx.fillStyle = hover ? "#9f9" : "white";
-    const insetSize = 0.9 * size;
-    ctx.fillRect(
-      (x - game.player.x - insetSize / 2) * zoom,
-      (y - game.player.y - insetSize / 2) * zoom,
-      insetSize * zoom,
-      insetSize * zoom,
-    );
-    ctx.fillStyle = "black";
-    ctx.fillText(
-      "Start",
-      (x - game.player.x) * zoom,
-      (y - game.player.y) * zoom,
-    );
-  }
-  {
-    const { x, y, size } = resetBox;
-    const hover = boxContains(resetBox, game.player);
-    if (hover) {
-      message = "Resets the entire game! Are you sure?";
-    }
-    ctx.fillStyle = hover ? "#f99" : "white";
-    const insetSize = 0.9 * size;
-    ctx.fillRect(
-      (x - game.player.x - insetSize / 2) * zoom,
-      (y - game.player.y - insetSize / 2) * zoom,
-      insetSize * zoom,
-      insetSize * zoom,
-    );
-    ctx.fillStyle = "black";
-    ctx.fillText(
-      "Reset Game",
-      (x - game.player.x) * zoom,
-      (y - game.player.y) * zoom,
-    );
-  }
-  return message;
+  ctx.fillStyle = "white";
+  ctx.fillRect(
+    rect.x - upgradeButtonWidth / 2,
+    rect.y - upgradeButtonHeight / 2,
+    rect.width,
+    rect.height,
+  );
+  ctx.fillStyle = "black";
+  ctx.fillText("Go", rect.x, rect.y);
 }
 
 requestAnimationFrame(render);

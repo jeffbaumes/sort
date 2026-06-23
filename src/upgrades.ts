@@ -1,5 +1,3 @@
-import { type Box } from "./box";
-
 export type UpgradeType =
   | "max_speed"
   | "goal_size"
@@ -10,7 +8,7 @@ export type UpgradeType =
   | "auto_drop"
   | "magnet_speed";
 
-export type UpgradeInfo = Box & {
+export type UpgradeInfo = {
   type: UpgradeType;
   name: string;
   description: string;
@@ -21,65 +19,41 @@ export const upgradeInfo: UpgradeInfo[] = [
     type: "goal_on_piece",
     name: "Piece Target",
     description: "Shows the target location on the held piece",
-    x: 0,
-    y: -2,
-    size: 1,
   },
   {
     type: "goal_visible",
     name: "Show Target",
     description: "Shows the target area of the held piece",
-    x: -1,
-    y: -2,
-    size: 1,
   },
   {
     type: "max_speed",
     name: "Speed",
     description: "Increases movement speed",
-    x: 1,
-    y: -2,
-    size: 1,
   },
   {
     type: "goal_size",
     name: "Target Size",
     description: "Increases target drop distance",
-    x: 2,
-    y: -2,
-    size: 1,
   },
   {
     type: "grid_size",
     name: "Grid Size",
     description: "Increases grid size and increses reward for placing pieces",
-    x: 3,
-    y: -2,
-    size: 1,
   },
   {
     type: "auto_pickup",
     name: "Auto Pickup",
     description: "Automatically picks up any piece you encounter",
-    x: 4,
-    y: -2,
-    size: 1,
   },
   {
     type: "auto_drop",
     name: "Auto Drop",
     description: "Automatically drops piece at target",
-    x: 5,
-    y: -2,
-    size: 1,
   },
   {
     type: "magnet_speed",
     name: "Magnet",
     description: "Increase pull on pieces toward target area",
-    x: 6,
-    y: -2,
-    size: 1,
   },
 ];
 
